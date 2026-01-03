@@ -61,6 +61,7 @@ jenkins-error-explainer/
 - Missing plugins / undefined DSL methods
 - Missing credentials
 - Workspace and file system errors
+- Git / SCM authentication failures during checkout
 
 ---
 

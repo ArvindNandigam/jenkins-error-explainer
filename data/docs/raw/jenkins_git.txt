@@ -1,0 +1,110 @@
+The following plugin provides functionality available through Pipeline-compatible steps. Read more about how to integrate steps into your Pipeline in the Steps section of the Pipeline Syntax page.
+
+For a list of other such plugins, see the Pipeline Steps Reference page.
+
+Table of Contents
+Git plugin
+git: Git
+Git plugin
+View this plugin on the Plugins site
+
+git: Git
+The git step performs a clone from the specified repository into a Pipeline workspace.
+
+Use the Pipeline Syntax Snippet Generator to generate a sample pipeline script for the git step. More advanced checkout operations require the checkout step with the scmGit parameter rather than the git step. Examples of the git step include:
+
+Git step with defaults
+Git step with https and a specific branch
+Git step with ssh and a private key credential
+Git step with https and changelog disabled
+Git step with git protocol and polling disabled
+See the argument descriptions for more details.
+The git step is a simplified shorthand for a subset of the more powerful checkout step with the scmGit parameter:
+
+checkout scmGit(branches: [[name: 'main']],
+    userRemoteConfigs: [[url: 'https://git-server/user/repository.git']])
+NOTE: The checkout step with the scmGit parameter is the preferred SCM checkout method. It provides significantly more functionality than the git step.
+
+Use the Pipeline Syntax Snippet Generator to generate a sample pipeline script for the checkout step.
+
+The checkout step with the scmGit parameter can be used in many cases where the git step cannot be used. Refer to the git plugin documentation for detailed descriptions of options available to the scmGit parameter of the checkout step. For example, the git step does not support:
+
+SHA-1 checkout
+Tag checkout
+Submodule checkout
+Sparse checkout
+Large file checkout (LFS)
+Reference repositories
+Branch merges
+Repository tagging
+Custom refspecs
+Timeout configuration
+Changelog calculation against a non-default reference
+Stale branch pruning
+Example: Git step with defaults
+Checkout from the git plugin source repository using https protocol, no credentials, and the master branch.
+
+The Pipeline Syntax Snippet Generator generates this example:
+
+git 'https://github.com/jenkinsci/git-plugin.git'
+Example: Git step with https and a specific branch
+Checkout from the Jenkins source repository using https protocol, no credentials, and a specific branch (stable-2.492). Note that this must be a local branch name like 'master' or 'develop'.
+
+Branch names that are not supported by the git step
+
+Remote branch names like 'origin/master' and 'origin/develop' are not supported as the branch argument
+SHA-1 hashes are not supported as the branch argument
+Tag names are not supported as the branch argument
+Remote branch names, SHA-1 hashes, and tag names are supported by the general purpose scmGit parameter of the checkout step.
+
+The Pipeline Syntax Snippet Generator generates this example:
+
+git branch: 'stable-2.492',
+    url: 'https://github.com/jenkinsci/jenkins.git'
+Example: Git step with ssh and a private key credential
+Checkout from the git client plugin source repository using ssh protocol, private key credentials, and the master branch. The credential must be a private key credential if the remote git repository is accessed with the ssh protocol. The credential must be a username / password credential if the remote git repository is accessed with http or https protocol.
+
+The Pipeline Syntax Snippet Generator generates this example:
+
+git credentialsId: 'my-private-key-credential-id',
+    url: 'git@github.com:jenkinsci/git-client-plugin.git'
+Example: Git step with https and changelog disabled
+Checkout from the Jenkins source repository using https protocol, no credentials, the master branch, and changelog calculation disabled. If changelog is false, then the changelog will not be computed for this job. If changelog is true or is not set, then the changelog will be computed. See the workflow scm step documentation for more changelog details.
+
+The Pipeline Syntax Snippet Generator generates this example:
+
+git changelog: false,
+    url: 'https://github.com/jenkinsci/credentials-plugin.git'
+Example: Git step with https protocol and polling disabled
+Checkout from the Jenkins platform labeler repository using https protocol, no credentials, the master branch, and no polling for changes. If poll is false, then the remote repository will not be polled for changes. If poll is true or is not set, then the remote repository will be polled for changes. See the workflow scm step documentation for more polling details.
+
+The Pipeline Syntax Snippet Generator generates this example:
+
+git poll: false,
+    url: 'https://github.com/jenkinsci/platformlabeler-plugin.git'
+Argument Descriptions
+url : String
+URL of the repository to be checked out in the workspace. Required parameter.
+
+Repository URL's should follow the git URL guidelines. Git steps to access a secured repository should provide a Jenkins credential with the credentialsId argument rather than embedding credentials in the URL. Credentials embedded in a repository URL may be visible in console logs or in other log files.
+
+branch : String (optional)
+Branch to be checked out in the workspace. Default is 'master'.
+
+Note that this must be a local branch name like 'master' or 'develop'. Remote branch names like 'origin/master' and 'origin/develop' are not supported as the branch argument. Tag names are not supported as the branch argument. SHA-1 hashes are not supported as the branch argument. Remote branch names, tag names, and SHA-1 hashes are supported by the general purpose checkout step with the scmGit parameter.
+
+changelog : boolean (optional)
+Compute changelog for this job. Default is 'true'.
+
+If changelog is false, then the changelog will not be computed for this job. If changelog is true or is not set, then the changelog will be computed.
+
+credentialsId : String (optional)
+Identifier of the credential used to access the remote git repository. Default is '<empty>'.
+
+The credential must be a private key credential if the remote git repository is accessed with the ssh protocol. The credential must be a username / password credential if the remote git repository is accessed with http or https protocol.
+
+poll : boolean (optional)
+Poll remote repository for changes. Default is 'true'.
+
+If poll is false, then the remote repository will not be polled for changes. If poll is true or is not set, then the remote repository will be polled for changes.
+
