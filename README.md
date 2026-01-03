@@ -39,20 +39,8 @@ Given a Jenkins pipeline error log, the system:
 ---
 
 ## Project Structure
-jenkins-error-explainer/
-│
-├── extract_error_features.py
-├── ingest_docs.py
-├── retrieve_docs.py
-├── explain_error.py
-├── prompts.py
-├── data/
-│ ├── errors/
-│ └── docs/
-└── README.md
 
-
----
+![alt text](image.png)
 
 ## Error Categories Covered
 
