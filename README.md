@@ -68,23 +68,25 @@ jenkins-error-explainer/
 ## Example
 
 **Input:**  
-Raw Jenkins console output containing a pipeline failure.
+Raw Jenkins console output containing a groovy syntax error.
 
 **Output:**
+Error Category:
+groovy_syntax_error
+
 Error Summary:
-The pipeline failed due to a Groovy syntax error caused by a missing closing brace.
+The pipeline failed due to a Groovy syntax error, most likely caused by an invalid or incomplete Jenkinsfile.
 
 Likely Causes:
-
-Unbalanced braces in the Jenkinsfile
-
-Incorrect pipeline structure
+- Missing or mismatched braces in the Jenkinsfile
+- Invalid declarative pipeline structure
 
 Relevant Documentation:
-
-https://www.jenkins.io/doc/book/pipeline/syntax/
-
----
+- pipeline_syntax.txt (https://www.jenkins.io/doc/)
+- using_a_jenkinsfile.txt (https://www.jenkins.io/doc/)
+- using_a_jenkinsfile.txt (https://www.jenkins.io/doc/)
+- using_a_jenkinsfile.txt (https://www.jenkins.io/doc/)
+- using_a_jenkinsfile.txt (https://www.jenkins.io/doc/)
 
 ## Design Principles
 
