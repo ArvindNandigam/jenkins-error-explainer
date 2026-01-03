@@ -1,0 +1,11 @@
+Started by user Arvind Nandigam
+[Pipeline] Start of Pipeline
+[Pipeline] stage
+[Pipeline] { (Build)
+[Pipeline] sh
+[Pipeline] error
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] End of Pipeline
+ERROR: Attempted to execute a step that requires a node context while ‘agent none’ was specified. Be sure to specify your own ‘node { ... }’ blocks when using ‘agent none’.
+Finished: FAILURE

@@ -1,0 +1,10 @@
+Started by user Arvind Nandigam
+[Pipeline] Start of Pipeline
+[Pipeline] node
+Still waiting to schedule task
+‘Jenkins’ doesn’t have label ‘no-such-node’
+Aborted by Arvind Nandigam
+[Pipeline] // node
+[Pipeline] End of Pipeline
+org.jenkinsci.plugins.workflow.actions.ErrorAction$ErrorId: db6e2408-0d72-4f17-a842-4d2ecce38130
+Finished: ABORTED
