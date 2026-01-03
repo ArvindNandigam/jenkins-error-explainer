@@ -19,6 +19,12 @@ def main():
 
     result = explain_error(log_text)
 
+    if result["error_category"] == "unknown":
+        print(
+            "Warning: This error is not currently supported by the explainer. "
+            "The explanation may be incomplete.\n"
+        )
+
     print("\n=== Jenkins Error Explanation ===\n")
     print(f"Error Category:\n{result['error_category']}\n")
 

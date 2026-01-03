@@ -53,6 +53,17 @@ Given a Jenkins pipeline error log, the system:
 
 ---
 
+## Model Usage
+
+This project does not train or fine-tune any machine learning models.
+
+Pre-trained sentence embedding models are used solely for semantic retrieval
+over Jenkins documentation. No Jenkins error logs are used for training.
+
+This design avoids the need for labeled datasets and ensures predictable,
+reproducible behavior.
+
+---
 ## Example
 
 **Input:**  
@@ -91,6 +102,22 @@ Relevant Documentation:
 - Plugin-aware error analysis
 - CLI or web-based interface
 - Version-aware documentation indexing
+
+---
+
+## Guarantees and Limitations
+
+This tool does NOT act as a general-purpose AI assistant.
+
+Guarantees:
+- Explanations are grounded in official Jenkins documentation only.
+- Error classification is deterministic and rule-based.
+- If relevant documentation is not found, the tool explicitly reports uncertainty.
+
+Limitations:
+- The tool does not attempt to fix errors automatically.
+- It does not infer causes beyond documented Jenkins behavior.
+- Unknown or plugin-specific errors may be reported as unsupported.
 
 ---
 

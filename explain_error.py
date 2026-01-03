@@ -113,6 +113,13 @@ def explain_error(log_text: str):
         explanation["references"].append(
             f"{r['meta']['source_file']} ({r['meta']['source']})"
         )
+    if not retrieved:
+        explanation["summary"] = (
+            "No relevant Jenkins documentation was found for this error. "
+            "The error may be plugin-specific or outside the current scope."
+        )
+        explanation["likely_causes"] = []
+        explanation["references"] = []
 
     return explanation
 
