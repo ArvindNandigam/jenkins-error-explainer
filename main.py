@@ -1,6 +1,8 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
 from explain_error import explain_error
+import os
+os.environ["TF_ENABLE_ONEDNN_OPTS"] = "0"
 
 app = FastAPI(title="Jenkins Error Explainer API")
 
