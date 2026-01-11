@@ -124,10 +124,3 @@ def explain_error(log_text: str):
     return explanation
 
 
-if __name__ == "__main__":
-    with open("data/errors/error_05.txt", "r", encoding="utf-8") as f:
-        log = f.read()
-
-    result = explain_error(log)
-    for k, v in result.items():
-        print(f"\n{k.upper()}:\n{v}")
