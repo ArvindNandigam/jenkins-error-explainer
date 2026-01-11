@@ -1,5 +1,9 @@
 from sentence_transformers import SentenceTransformer
 
 print("Downloading model...")
-model = SentenceTransformer("all-MiniLM-L6-v2")
+MODEL = SentenceTransformer(
+    "all-MiniLM-L6-v2",
+    cache_folder="./model_cache"
+)
+
 print("Model cached successfully!")
