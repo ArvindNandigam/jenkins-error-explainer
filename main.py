@@ -11,3 +11,10 @@ class LogInput(BaseModel):
 def explain(data: LogInput):
     result = explain_error(data.log_text)
     return result
+@app.get("/")
+def home():
+    return {
+        "message": "Jenkins Error Explainer API is running",
+        "endpoints": ["/explain", "/docs"]
+    }
+

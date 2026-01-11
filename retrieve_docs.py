@@ -18,9 +18,8 @@ QUERY_TEMPLATES = {
     "file_not_found": "Jenkins pipeline workspace file not found",
     "git_authentication_error": "Jenkins git authentication failed checkout"
 }
-
+model = SentenceTransformer("all-MiniLM-L6-v2")
 def retrieve_docs(error_category: str):
-    model = SentenceTransformer("all-MiniLM-L6-v2")
 
     index = faiss.read_index(INDEX_PATH)
     with open(META_PATH, "r", encoding="utf-8") as f:
