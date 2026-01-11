@@ -1,6 +1,8 @@
 fastapi
 uvicorn
 sentence-transformers==2.2.2
+huggingface_hub==0.19.4
 faiss-cpu
 numpy
 pydantic
+torch
