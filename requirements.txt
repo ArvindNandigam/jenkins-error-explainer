@@ -6,3 +6,5 @@ faiss-cpu
 numpy
 pydantic
 torch
+transformers==4.35.2
+tokenizers==0.15.2
