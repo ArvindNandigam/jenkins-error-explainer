@@ -1,4 +1,4 @@
-"""# ingest_docs.py
+# ingest_docs.py
 
 import os
 import json
@@ -20,7 +20,7 @@ def chunk_text(text, size):
     return chunks
 
 def main():
-    model = SentenceTransformer("all-MiniLM-L6-v2")
+    model = SentenceTransformer("paraphrase-MiniLM-L3-v2", cache_folder="./model_cache")
 
     documents = []
     metadata = []
@@ -52,4 +52,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-"""

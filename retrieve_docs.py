@@ -19,7 +19,7 @@ QUERY_TEMPLATES = {
     "git_authentication_error": "Jenkins git authentication failed checkout"
 }
 model = SentenceTransformer(
-    "all-MiniLM-L6-v2",
+    "paraphrase-MiniLM-L3-v2",
     cache_folder="./model_cache"
 )
 
@@ -48,6 +48,6 @@ def retrieve_docs(error_category: str):
 
 
 if __name__ == "__main__":
-    results = retrieve_docs("groovy_syntax_error")
+    results = retrieve_docs("Started by user Arvind Nandigam org.codehaus.groovy.control.MultipleCompilationErrorsException: startup failed: WorkflowScript: 10: expecting '}', found '' @ line 10, column 1.1 error")
     for r in results:
         print(r)
