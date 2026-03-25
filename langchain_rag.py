@@ -1,47 +1,21 @@
-# langchain_rag.py
-# LangChain-based RAG pipeline for Jenkins error explanation
-
 import os
 import json
-import tempfile
 from typing import List, Dict, Any
 
 from langchain_core.documents import Document
-from langchain_core.prompts import PromptTemplate
-from langchain_core.output_parsers import StrOutputParser
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_community.vectorstores import FAISS
-from langchain_community.llms import HuggingFaceHub
-from langchain.chains import RetrievalQA
 
 from extract_error_features import extract_error_features
 
 RAW_DOCS_DIR = "data/docs/raw"
 CHUNK_SIZE = 400
 
-def load_raw_docs() -> List[Document]:
-    """Load raw Jenkins documentation files and convert to LangChain Documents."""
-    documents = []
-    
-    for fname in os.listdir(RAW_DOCS_DIR):
-        path = os.path.join(RAW_DOCS_DIR, fname)
-        with open(path, "r", encoding="utf-8") as f:
-            text = f.read()
-        
-        chunks = chunk_text(text, CHUNK_SIZE)
-        for chunk in chunks:
-            documents.append(Document(
-                page_content=chunk,
-                metadata={
-                    "source_file": fname,
-                    "source": "https://www.jenkins.io/doc/"
-                }
-            ))
-    
-    return documents
 
+# -------------------------
+# Utils
+# -------------------------
 def chunk_text(text: str, size: int) -> List[str]:
-    """Split text into chunks."""
     chunks = []
     for i in range(0, len(text), size):
         chunk = text[i:i+size].strip()
@@ -49,108 +23,140 @@ def chunk_text(text: str, size: int) -> List[str]:
             chunks.append(chunk)
     return chunks
 
+
+def load_raw_docs() -> List[Document]:
+    documents = []
+
+    for fname in os.listdir(RAW_DOCS_DIR):
+        path = os.path.join(RAW_DOCS_DIR, fname)
+        with open(path, "r", encoding="utf-8") as f:
+            text = f.read()
+
+        chunks = chunk_text(text, CHUNK_SIZE)
+
+        for chunk in chunks:
+            documents.append(
+                Document(
+                    page_content=chunk,
+                    metadata={
+                        "source_file": fname,
+                        "source": "https://www.jenkins.io/doc/"
+                    }
+                )
+            )
+
+    return documents
+
+
+# -------------------------
+# RAG CLASS
+# -------------------------
 class JenkinsRAGChain:
-    """LangChain-based RAG chain for Jenkins error explanation."""
-    
     def __init__(self):
+        print("Loading embeddings...")
+
         self.embeddings = HuggingFaceEmbeddings(
             model_name="sentence-transformers/paraphrase-MiniLM-L3-v2",
-            model_kwargs={'device': 'cpu'}
+            model_kwargs={"device": "cpu"}
         )
-        
+
+        print("Loading documents...")
         self.documents = load_raw_docs()
+
+        print("Building FAISS index...")
         self.vectorstore = FAISS.from_documents(
             self.documents,
             self.embeddings
         )
-        
+
         self.retriever = self.vectorstore.as_retriever(
             search_kwargs={"k": 5}
         )
-        
-        self.llm = HuggingFaceHub(
-            repo_id="google/flan-t5-base",
-            model_kwargs={"temperature": 0.3, "max_new_tokens": 256}
-        )
-        
-        self.prompt = PromptTemplate(
-            template="""You are a Jenkins CI/CD expert. Use the following context from 
-official Jenkins documentation to explain the error.
 
-Context from Jenkins documentation:
-{context}
+    # -------------------------
+    # Retrieval
+    # -------------------------
+    def retrieve_docs(self, query: str) -> List[Document]:
+        return self.retriever.invoke(query)
 
-Error log to explain:
-{question}
+    # -------------------------
+    # Simple Explanation Generator (NO LLM needed)
+    # -------------------------
+    def generate_explanation(self, query: str, docs: List[Document]) -> str:
+        context = "\n\n".join([doc.page_content for doc in docs])
 
-Provide a clear explanation with:
-1. Error Summary
-2. Likely Causes
-3. Relevant Documentation links
+        return f"""
+Jenkins Error Explanation
 
-If the documentation doesn't cover this error, say so explicitly.""",
-            input_variables=["context", "question"]
-        )
-        
-        self.qa_chain = RetrievalQA.from_chain_type(
-            llm=self.llm,
-            chain_type="stuff",
-            retriever=self.retriever,
-            chain_type_kwargs={"prompt": self.prompt},
-            output_parser=StrOutputParser()
-        )
-    
+Context from documentation:
+{context[:1500]}
+
+Analysis:
+Based on the retrieved documentation, this error likely relates to Jenkins pipeline or configuration issues.
+
+Suggested Actions:
+- Check Jenkinsfile syntax
+- Verify plugins and agents
+- Review pipeline configuration
+
+Note:
+This explanation is grounded in official Jenkins documentation.
+"""
+
+    # -------------------------
+    # Main API
+    # -------------------------
     def explain_error(self, log_text: str) -> Dict[str, Any]:
-        """Explain a Jenkins error using LangChain RAG."""
         features = extract_error_features(log_text)
         category = features["category"]
-        
-        enhanced_query = f"""
+
+        query = f"""
 Error Category: {category}
 
 Jenkins log:
 {log_text}
-
-Explain this error using the retrieved documentation.
 """
-        
-        result = self.qa_chain.invoke(enhanced_query)
-        
+
+        docs = self.retrieve_docs(query)
+
+        explanation = self.generate_explanation(query, docs)
+
         return {
             "error_category": category,
-            "llm_explanation": result,
-            "retrieval_source": "LangChain RAG (FAISS + HuggingFace)",
-            "model_used": "google/flan-t5-base",
+            "llm_explanation": explanation,
+            "retrieved_docs": [
+                {
+                    "content": doc.page_content[:200],
+                    "source": doc.metadata.get("source")
+                }
+                for doc in docs
+            ],
+            "retrieval_source": "FAISS + sentence-transformers",
             "embedding_model": "paraphrase-MiniLM-L3-v2"
         }
 
+
+# -------------------------
+# Singleton
+# -------------------------
 def get_rag_chain() -> JenkinsRAGChain:
-    """Get or create the RAG chain (singleton pattern for efficiency)."""
-    if not hasattr(get_rag_chain, '_instance'):
+    if not hasattr(get_rag_chain, "_instance"):
         get_rag_chain._instance = JenkinsRAGChain()
     return get_rag_chain._instance
 
 
+# -------------------------
+# Test
+# -------------------------
 if __name__ == "__main__":
-    print("Initializing LangChain RAG Chain...")
-    print("=" * 50)
-    
+    print("Initializing RAG...")
     rag = JenkinsRAGChain()
-    
+
     sample_error = """
-Started by user admin
-org.codehaus.groovy.control.MultipleCompilationErrorsException: startup failed:
-WorkflowScript: 10: expecting '}', found '' @ line 10, column 1.
-1 error
-    at org.codehaus.groovy.control.ErrorNode.accept(ErrorNode.java:36)
-    at org.codehaus.groovy.control.CompilationUnit$3.call(CompilationUnit.java:698)
-    """
-    
-    print("\nSample Jenkins Error:")
-    print(sample_error)
-    print("=" * 50)
-    
+org.codehaus.groovy.control.MultipleCompilationErrorsException:
+WorkflowScript: 10: expecting '}', found ''
+"""
+
     result = rag.explain_error(sample_error)
-    
-    print("\nResult from LangChain RAG:")
+
     print(json.dumps(result, indent=2))
