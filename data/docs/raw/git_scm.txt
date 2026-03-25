@@ -1,0 +1,206 @@
+The following plugin provides functionality available through Pipeline-compatible steps. Read more about how to integrate steps into your Pipeline in the Steps section of the Pipeline Syntax page.
+
+For a list of other such plugins, see the Pipeline Steps Reference page.
+
+scmGit
+scmGit
+The git plugin provides fundamental git operations for Jenkins projects. It can poll, fetch, checkout, and merge contents of git repositories.
+
+The scmGit parameter of the git plugin is used with the Pipeline SCM checkout step to checkout git repositories into Pipeline workspaces. The Pipeline Syntax Snippet Generator guides the user to select git plugin checkout options and provides online help for each of the options.
+
+Use the Pipeline Snippet Generator to generate a sample pipeline script for the checkout step. Examples of the checkout step include:
+
+Checkout step with defaults
+Checkout step with https and a specific branch
+Checkout step with ssh and a private key credential
+Checkout step with https and changelog disabled
+Checkout step with git protocol and polling disabled
+See the argument descriptions for more details.
+The scmGit parameter of the checkout step provides access to all the Pipeline capabilities provided by the git plugin:
+
+checkout scmGit(userRemoteConfigs: [
+                    [ url: 'https://github.com/jenkinsci/git-plugin' ]
+                ])
+NOTE: The checkout step with the scmGit parameter is the preferred SCM checkout method. For simpler cases that do not require all the capabilities of the git plugin, the git step can also be used.
+
+Use the Pipeline Snippet Generator to generate a sample pipeline script for the checkout step.
+
+The checkout step with the scmGit parameter can be used in many cases where the git step cannot be used. Refer to the git plugin documentation for detailed descriptions of options available to the checkout step. For example, the checkout step supports:
+
+SHA-1 checkout
+Tag checkout
+Submodule checkout
+Sparse checkout
+Large file checkout (LFS)
+Reference repositories
+Branch merges
+Repository tagging
+Custom refspecs
+Timeout configuration
+Changelog calculation against a non-default reference
+Stale branch pruning
+Example: Checkout step with defaults
+Checkout from the git plugin source repository using https protocol, no credentials, and the master branch.
+
+The Pipeline Snippet Generator generates this example:
+
+checkout scmGit(userRemoteConfigs: [
+                    [ url: 'https://github.com/jenkinsci/git-plugin' ]
+                ])
+Example: Checkout step with https and a specific branch
+Checkout from the Jenkins source repository using https protocol, no credentials, and a specific branch (stable-2.289).
+
+The Pipeline Snippet Generator generates this example:
+
+checkout scmGit(branches: [[name: 'stable-2.289']],
+                userRemoteConfigs: [
+                    [ url: 'https://github.com/jenkinsci/jenkins.git' ]
+                ])
+Example: Checkout step with ssh and a private key credential
+Checkout from the git client plugin source repository using ssh protocol, private key credentials, and the master branch. The credential must be a private key credential if the remote git repository is accessed with the ssh protocol. The credential must be a username / password credential if the remote git repository is accessed with http or https protocol.
+
+The Pipeline Snippet Generator generates this example:
+
+checkout changelog: false,
+         scm: scmGit(userRemoteConfigs: [
+                         [ credentialsId: 'my-private-key-credential-id',
+                           url: 'git@github.com:jenkinsci/git-client-plugin.git' ]
+                     ])
+Example: Checkout step with https and changelog disabled
+Checkout from the Jenkins source repository using https protocol, no credentials, the master branch, and changelog calculation disabled. If changelog is false, then the changelog will not be computed for this job. If changelog is true or is not set, then the changelog will be computed. See the workflow scm step documentation for more changelog details.
+
+The Pipeline Snippet Generator generates this example:
+
+checkout changelog: false,
+         scm: scmGit(userRemoteConfigs: [
+                         [ url: 'https://github.com/jenkinsci/credentials-plugin' ]
+                     ])
+Example: Checkout step with git protocol and polling disabled
+Checkout from the command line git repository using git protocol, no credentials, the master branch, and no polling for changes. If poll is false, then the remote repository will not be polled for changes. If poll is true or is not set, then the remote repository will be polled for changes. See the workflow scm step documentation for more polling details.
+
+The Pipeline Snippet Generator generates this example:
+
+checkout poll: false,
+         scm: scmGit(userRemoteConfigs: [
+                         [ url: 'git://git.kernel.org/pub/scm/git/git.git' ]
+                     ])
+Argument Descriptions
+userRemoteConfigs
+Specify the repository to track. This can be a URL or a local file path. Note that for super-projects (repositories with submodules), only a local file path or a complete URL is valid. The following are examples of valid git URLs.
+ssh://git@github.com/github/git.git
+git@github.com:github/git.git (short notation for ssh protocol)
+ssh://user@other.host.com/~/repos/R.git (to access the repos/R.git repository in the user's home directory)
+https://github.com/github/git.git
+
+If the repository is a super-project, the location from which to clone submodules is dependent on whether the repository is bare or non-bare (i.e. has a working directory).
+If the super-project is bare, the location of the submodules will be taken from .gitmodules.
+If the super-project is not bare, it is assumed that the repository has each of its submodules cloned and checked out appropriately. Thus, the submodules will be taken directly from a path like ${SUPER_PROJECT_URL}/${SUBMODULE}, rather than relying on information from .gitmodules.
+For a local URL/path to a super-project, git rev-parse --is-bare-repository is used to detect whether the super-project is bare or not.
+For a remote URL to a super-project, the ending of the URL determines whether a bare or non-bare repository is assumed:
+If the remote URL ends with .git, a non-bare repository is assumed.
+If the remote URL does NOT end with .git, a bare repository is assumed.
+Array / List of Nested Object
+url : String
+name : String
+refspec : String
+credentialsId : String
+branches
+List of branches to build. Jenkins jobs are most effective when each job builds only a single branch. When a single job builds multiple branches, the changelog comparisons between branches often show no changes or incorrect changes.
+Array / List of Nested Object
+name : String
+browser
+Defines the repository browser that displays changes detected by the git plugin.
+Nested Choice of Objects
+assembla
+$class: 'BacklogGitRepositoryBrowser'
+bitbucketServer
+bitbucket
+cgit
+fisheye
+gitblit
+$class: 'GitBucketBrowser'
+gitLab
+gitLabBrowser
+gitList
+gitWeb
+$class: 'GiteaBrowser'
+github
+gitiles
+$class: 'GitoriousWeb'
+gogs
+kiln
+phabricator
+redmine
+rhodeCode
+$class: 'ScmManagerGitRepositoryBrowser'
+jbSpace
+$class: 'Stash'
+teamFoundation
+$class: 'TracGitRepositoryBrowser'
+$class: 'TuleapBrowser'
+viewgit
+gitTool : String
+Name of the git tool to be used for this job. Git tool names are defined in "Global Tool Configuration".
+
+extensions
+Extensions add new behavior or modify existing plugin behavior for different uses. Extensions help users more precisely tune plugin behavior to meet their needs.
+
+Extensions include:
+
+Clone extensions modify the git operations that retrieve remote changes into the agent workspace. The extensions can adjust the amount of history retrieved, how long the retrieval is allowed to run, and other retrieval details.
+Checkout extensions modify the git operations that place files in the workspace from the git repository on the agent. The extensions can adjust the maximum duration of the checkout operation, the use and behavior of git submodules, the location of the workspace on the disc, and more.
+Changelog extensions adapt the source code difference calculations for different cases.
+Tagging extensions allow the plugin to apply tags in the current workspace.
+Build initiation extensions control the conditions that start a build. They can ignore notifications of a change or force a deeper evaluation of the commits when polling.
+Merge extensions can optionally merge changes from other branches into the current branch of the agent workspace. They control the source branch for the merge and the options applied to the merge.
+Array / List of Nested Choice of Objects
+authorInChangelog
+$class: 'BitbucketEnvVarExtension'
+$class: 'BuildChooserSetting'
+buildSingleRevisionOnly
+changelogToBranch
+checkoutOption
+cleanBeforeCheckout
+cleanAfterCheckout
+cloneOption
+$class: 'CodeCommitURLHelper'
+$class: 'DisableRemotePoll'
+$class: 'ExcludeFromChangeSet'
+$class: 'ExcludeFromPoll'
+$class: 'FallbackToOtherRepositoryGitSCMExtension'
+firstBuildChangelog
+$class: 'GitClientAuthenticatorExtension'
+lfs
+$class: 'GitSCMChecksExtension'
+$class: 'GitSCMStatusChecksExtension'
+$class: 'GitTagMessageExtension'
+$class: 'IgnoreNotifyCommit'
+localBranch
+$class: 'MessageExclusion'
+$class: 'PathRestriction'
+perBuildTag
+$class: 'PreBuildMerge'
+pretestedIntegration
+pruneStaleBranch
+pruneTags
+$class: 'RelativeTargetDirectory'
+$class: 'ScmName'
+sparseCheckout
+submodule
+$class: 'UserExclusion'
+$class: 'UserIdentity'
+$class: 'WipeWorkspace'
+doGenerateSubmoduleConfigurations : boolean (optional)
+Removed facility that was intended to test combinations of git submodule versions. Removed in git plugin 4.6.0. Ignores the user provided value and always uses false as its value.
+
+submoduleCfg (optional)
+Removed facility that was intended to test combinations of git submodule versions. Removed in git plugin 4.6.0. Ignores the user provided value(s) and always uses empty values.
+
+Array / List of Nested Object
+submoduleName : String
+Removed in git plugin 4.6.0.
+
+branches : Array / List of String
+Removed in git plugin 4.6.0.
+
+Was this page helpful?

@@ -1,0 +1,16 @@
+Started by user Arvind Nandigam
+[Pipeline] Start of Pipeline
+[Pipeline] node
+Running on Jenkins in /var/jenkins_home/workspace/error_05
+[Pipeline] {
+[Pipeline] stage
+[Pipeline] { (Auth)
+[Pipeline] withCredentials
+[Pipeline] // withCredentials
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] }
+[Pipeline] // node
+[Pipeline] End of Pipeline
+ERROR: Could not find credentials entry with ID 'does-not-exist'
+Finished: FAILURE
