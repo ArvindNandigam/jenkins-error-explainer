@@ -6,7 +6,7 @@ faiss-cpu
 numpy
 pydantic
 torch
-transformers==4.35.2
+transformers==4.53.0
 tokenizers==0.15.2
 langchain
 langchain-core
