@@ -169,7 +169,6 @@ print(result)
 |----------|--------|-------------|
 | `/` | GET | Home page with UI |
 | `/explain` | POST | Explain a Jenkins error |
-| `/health` | GET | Health check |
 
 ### Example Request
 
