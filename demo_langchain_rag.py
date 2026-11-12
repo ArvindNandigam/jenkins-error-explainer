@@ -3,7 +3,13 @@
 # Run: python demo_langchain_rag.py
 
 import json
+import sys
 from langchain_rag import JenkinsRAGChain, get_rag_chain
+
+
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+
 
 def print_section(title):
     print("\n" + "=" * 60)
@@ -13,21 +19,21 @@ def print_section(title):
 def main():
     print_section("LangChain + RAG Demo for Textify.ai Internship")
     print("\nThis demo showcases:")
-    print("  • LangChain framework for building LLM chains")
-    print("  • RAG (Retrieval-Augmented Generation) pattern")
-    print("  • Vector search with FAISS + HuggingFace embeddings")
-    print("  • Integration with Jenkins documentation")
+    print("  - LangChain framework for retrieval pipelines")
+    print("  - RAG (Retrieval-Augmented Generation) pattern")
+    print("  - Vector search with FAISS + HuggingFace embeddings")
+    print("  - Integration with Jenkins documentation")
 
     print_section("1. Initializing LangChain RAG Chain")
     print("Loading Jenkins documentation...")
     print("Creating vector embeddings with paraphrase-MiniLM-L3-v2...")
-    print("Setting up RetrievalQA chain with FLAN-T5...")
+    print("Setting up the documentation-grounded retrieval chain...")
     
     rag = JenkinsRAGChain()
-    print("\n✓ RAG Chain initialized successfully!")
+    print("\nRAG Chain initialized successfully!")
     print(f"  - Documents indexed: {len(rag.documents)}")
     print(f"  - Embedding model: {rag.embeddings.model_name}")
-    print(f"  - LLM: {rag.llm.repo_id}")
+    print("  - Generator: deterministic documentation-grounded formatter")
 
     test_errors = [
         {
@@ -77,10 +83,9 @@ Available DSL methods:
         print(f"\n--- Result ---")
         print(f"Error Category: {result['error_category']}")
         print(f"\nLLM Explanation (from RAG):")
-        print(result['llm_explanation'])
+        print(result['documentation_explanation'])
         print(f"\n[Metadata]")
         print(f"  Retrieval: {result['retrieval_source']}")
-        print(f"  LLM Model: {result['model_used']}")
         print(f"  Embeddings: {result['embedding_model']}")
 
     print_section("3. LangChain Architecture Summary")
@@ -91,7 +96,7 @@ Available DSL methods:
 │                                                             │
 │  ┌──────────────┐    ┌──────────────┐    ┌──────────────┐  │
 │  │  User Error  │───▶│   Retriever  │───▶│     LLM      │  │
-│  │    Log       │    │  (FAISS)     │    │  (FLAN-T5)   │  │
+│  │    Log       │    │  (FAISS)     │    │  Formatter   │  │
 │  └──────────────┘    └──────────────┘    └──────────────┘  │
 │         │                   │                   │           │
 │         ▼                   ▼                   ▼           │
@@ -120,9 +125,8 @@ POST /explain-rag
 Response:
 {
   "error_category": "groovy_syntax_error",
-  "llm_explanation": "The error indicates...",
+  "documentation_explanation": "The retrieved documentation indicates...",
   "retrieval_source": "LangChain RAG (FAISS + HuggingFace)",
-  "model_used": "google/flan-t5-base",
   "embedding_model": "paraphrase-MiniLM-L3-v2"
 }
 """)

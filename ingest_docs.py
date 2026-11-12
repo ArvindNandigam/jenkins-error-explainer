@@ -2,12 +2,15 @@
 
 import os
 import json
+from pathlib import Path
+
 import faiss
 from sentence_transformers import SentenceTransformer
 
-RAW_DOCS_DIR = "data/docs/raw"
-INDEX_PATH = "data/docs/docs.index"
-META_PATH = "data/docs/docs_meta.json"
+PROJECT_ROOT = Path(__file__).resolve().parent
+RAW_DOCS_DIR = PROJECT_ROOT / "data" / "docs" / "raw"
+INDEX_PATH = PROJECT_ROOT / "data" / "docs" / "docs.index"
+META_PATH = PROJECT_ROOT / "data" / "docs" / "docs_meta.json"
 
 CHUNK_SIZE = 400
 
@@ -20,13 +23,16 @@ def chunk_text(text, size):
     return chunks
 
 def main():
-    model = SentenceTransformer("paraphrase-MiniLM-L3-v2", cache_folder="./model_cache")
+    model = SentenceTransformer(
+        "paraphrase-MiniLM-L3-v2",
+        cache_folder=str(PROJECT_ROOT / "model_cache")
+    )
 
     documents = []
     metadata = []
 
-    for fname in os.listdir(RAW_DOCS_DIR):
-        path = os.path.join(RAW_DOCS_DIR, fname)
+    for fname in sorted(os.listdir(RAW_DOCS_DIR)):
+        path = RAW_DOCS_DIR / fname
         with open(path, "r", encoding="utf-8") as f:
             text = f.read()
 
@@ -42,8 +48,8 @@ def main():
     index = faiss.IndexFlatL2(embeddings.shape[1])
     index.add(embeddings)
 
-    os.makedirs("data/docs", exist_ok=True)
-    faiss.write_index(index, INDEX_PATH)
+    INDEX_PATH.parent.mkdir(parents=True, exist_ok=True)
+    faiss.write_index(index, str(INDEX_PATH))
 
     with open(META_PATH, "w", encoding="utf-8") as f:
         json.dump(metadata, f, indent=2)

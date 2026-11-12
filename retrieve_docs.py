@@ -1,12 +1,15 @@
 # retrieve_docs.py
 
 import json
+from pathlib import Path
+
 import faiss
 import numpy as np
 from sentence_transformers import SentenceTransformer
 
-INDEX_PATH = "data/docs/docs.index"
-META_PATH = "data/docs/docs_meta.json"
+PROJECT_ROOT = Path(__file__).resolve().parent
+INDEX_PATH = PROJECT_ROOT / "data" / "docs" / "docs.index"
+META_PATH = PROJECT_ROOT / "data" / "docs" / "docs_meta.json"
 TOP_K = 5
 
 QUERY_TEMPLATES = {
@@ -18,14 +21,24 @@ QUERY_TEMPLATES = {
     "file_not_found": "Jenkins pipeline workspace file not found",
     "git_authentication_error": "Jenkins git authentication failed checkout"
 }
-model = SentenceTransformer(
-    "paraphrase-MiniLM-L3-v2",
-    cache_folder="./model_cache"
-)
+_model = None
 
-def retrieve_docs(error_category: str):
 
-    index = faiss.read_index(INDEX_PATH)
+def get_embedding_model() -> SentenceTransformer:
+    global _model
+    if _model is None:
+        _model = SentenceTransformer(
+            "paraphrase-MiniLM-L3-v2",
+            cache_folder=str(PROJECT_ROOT / "model_cache")
+        )
+    return _model
+
+
+def retrieve_docs(error_category: str, top_k: int = TOP_K):
+    if top_k < 1:
+        raise ValueError("top_k must be at least 1")
+
+    index = faiss.read_index(str(INDEX_PATH))
     with open(META_PATH, "r", encoding="utf-8") as f:
         metadata = json.load(f)
 
@@ -34,15 +47,16 @@ def retrieve_docs(error_category: str):
         "Jenkins pipeline error"
     )
 
-    query_embedding = model.encode([query])
-    distances, indices = index.search(query_embedding, TOP_K)
+    query_embedding = np.asarray(
+        get_embedding_model().encode([query]),
+        dtype=np.float32
+    )
+    _, indices = index.search(query_embedding, min(top_k, index.ntotal))
 
     results = []
     for idx in indices[0]:
-        results.append({
-            "text": None,
-            "meta": metadata[idx]
-        })
+        if 0 <= idx < len(metadata):
+            results.append({"text": None, "meta": metadata[idx]})
 
     return results
 

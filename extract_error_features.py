@@ -7,6 +7,9 @@ COMPILED_PATTERNS = {
 }
 
 def extract_error_features(log_text: str) -> dict:
+    if not isinstance(log_text, str):
+        raise TypeError("log_text must be a string")
+
     result = {
         "category": "unknown",
         "matched_signals": [],
@@ -16,9 +19,14 @@ def extract_error_features(log_text: str) -> dict:
     for category, patterns in COMPILED_PATTERNS.items():
         for pattern in patterns:
             if pattern.search(log_text):
-                result["category"] = category
+                if result["category"] == "unknown":
+                    result["category"] = category
                 result["matched_signals"].append(pattern.pattern)
 
-    result["line_numbers"] = re.findall(r"line (\d+)", log_text)
+    result["line_numbers"] = re.findall(
+        r"(?:line\s+|WorkflowScript:\s*)(\d+)",
+        log_text,
+        flags=re.IGNORECASE,
+    )
 
     return result

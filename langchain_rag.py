@@ -1,5 +1,6 @@
 import os
 import json
+from pathlib import Path
 from typing import List, Dict, Any
 
 from langchain_core.documents import Document
@@ -8,7 +9,8 @@ from langchain_community.vectorstores import FAISS
 
 from extract_error_features import extract_error_features
 
-RAW_DOCS_DIR = "data/docs/raw"
+PROJECT_ROOT = Path(__file__).resolve().parent
+RAW_DOCS_DIR = PROJECT_ROOT / "data" / "docs" / "raw"
 CHUNK_SIZE = 400
 
 
@@ -27,8 +29,8 @@ def chunk_text(text: str, size: int) -> List[str]:
 def load_raw_docs() -> List[Document]:
     documents = []
 
-    for fname in os.listdir(RAW_DOCS_DIR):
-        path = os.path.join(RAW_DOCS_DIR, fname)
+    for fname in sorted(os.listdir(RAW_DOCS_DIR)):
+        path = RAW_DOCS_DIR / fname
         with open(path, "r", encoding="utf-8") as f:
             text = f.read()
 
@@ -123,7 +125,7 @@ Jenkins log:
 
         return {
             "error_category": category,
-            "llm_explanation": explanation,
+            "documentation_explanation": explanation,
             "retrieved_docs": [
                 {
                     "content": doc.page_content[:200],

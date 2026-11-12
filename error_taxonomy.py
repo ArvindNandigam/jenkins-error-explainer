@@ -45,5 +45,30 @@ ERROR_CATEGORIES = {
         r"No such file or directory",
         r"cannot open",
         r"script returned exit code 1"
+    ],
+
+    "timeout_error": [
+        r"Timeout has been exceeded",
+        r"timed out",
+        r"TimeoutException"
+    ],
+
+    "out_of_memory": [
+        r"OutOfMemoryError",
+        r"out of memory",
+        r"Java heap space"
+    ],
+
+    "permission_denied": [
+        r"Permission denied",
+        r"Access is denied",
+        r"insufficient permission"
+    ],
+
+    "docker_error": [
+        r"DockerException",
+        r"docker: .* error",
+        r"Failed to pull image",
+        r"Cannot connect to the Docker daemon"
     ]
 }

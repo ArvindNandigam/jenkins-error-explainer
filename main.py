@@ -1,20 +1,29 @@
 from fastapi import FastAPI
+from pydantic import BaseModel, Field
+
 from explain_error import explain_error
 from langchain_rag import get_rag_chain
 
 app = FastAPI()
 
+
+class ExplainRequest(BaseModel):
+    log_text: str = Field(..., min_length=1)
+
+
 @app.get("/")
 def home():
-    return {"message": "Jenkins Error Explainer API running"}
+    return {
+        "name": "Jenkins Error Explainer API",
+        "status": "ok",
+        "endpoints": ["/explain", "/explain-rag"]
+    }
 
 @app.post("/explain")
-def explain(payload: dict):
-    log = payload["log_text"]
-    return explain_error(log)
+def explain(payload: ExplainRequest):
+    return explain_error(payload.log_text)
 
 @app.post("/explain-rag")
-def explain_with_rag(payload: dict):
-    log = payload["log_text"]
+def explain_with_rag(payload: ExplainRequest):
     rag_chain = get_rag_chain()
-    return rag_chain.explain_error(log)
+    return rag_chain.explain_error(payload.log_text)

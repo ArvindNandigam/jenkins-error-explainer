@@ -23,6 +23,9 @@ Relevant Documentation:
 """
 
 def explain_error(log_text: str):
+    if not isinstance(log_text, str) or not log_text.strip():
+        raise ValueError("log_text must be a non-empty string")
+
     features = extract_error_features(log_text)
     category = features["category"]
 
@@ -102,6 +105,34 @@ def explain_error(log_text: str):
         explanation["likely_causes"] = [
             "Invalid or missing Git credentials",
             "Repository requires token-based authentication"
+        ]
+
+    elif category == "timeout_error":
+        explanation["summary"] = "The pipeline or one of its steps exceeded the configured time limit."
+        explanation["likely_causes"] = [
+            "The build is blocked or taking longer than expected",
+            "The configured Jenkins timeout is too short"
+        ]
+
+    elif category == "out_of_memory":
+        explanation["summary"] = "The Jenkins process ran out of available memory while executing the build."
+        explanation["likely_causes"] = [
+            "The build requires more heap or container memory",
+            "A process is retaining more memory than expected"
+        ]
+
+    elif category == "permission_denied":
+        explanation["summary"] = "The Jenkins process lacks permission to access a file, command, or resource."
+        explanation["likely_causes"] = [
+            "The Jenkins service account lacks the required permission",
+            "The workspace or external resource has restrictive ownership or mode settings"
+        ]
+
+    elif category == "docker_error":
+        explanation["summary"] = "A Docker operation failed during the Jenkins pipeline."
+        explanation["likely_causes"] = [
+            "The Docker daemon is unavailable or inaccessible",
+            "The image name, registry credentials, or Dockerfile is invalid"
         ]
 
     else:
