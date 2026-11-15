@@ -1,20 +1,6 @@
 # Jenkins Error Explainer
 
-Jenkins Error Explainer is a Python service and CLI that classifies Jenkins pipeline failures, retrieves related Jenkins documentation with semantic search, and returns deterministic, documentation-grounded troubleshooting guidance.
-
-## Capabilities
-
-- Classifies Groovy syntax, missing agent, unavailable node, missing plugin, missing credentials, missing file, Git authentication, timeout, out-of-memory, permission, Docker, and unknown errors.
-- Extracts matched error signals and line numbers from raw Jenkins logs.
-- Generates summaries and likely causes for supported categories.
-- Uses Sentence Transformers and FAISS to retrieve the most relevant Jenkins documentation.
-- Provides a LangChain retrieval path that returns documentation context and recommended actions.
-- Serves REST endpoints with FastAPI and validates request bodies with Pydantic.
-- Provides a CLI for explaining log files.
-- Rebuilds the documentation index from raw Jenkins documentation.
-- Runs locally, in Docker, or on Hugging Face Spaces.
-
-This repository currently uses deterministic explanation templates. It does not call a live generative LLM; the semantic component is documentation retrieval.
+Jenkins Error Explainer is a Python service and CLI that classifies Jenkins pipeline errors, retrieves related Jenkins documentation, and returns deterministic troubleshooting guidance.
 
 ## Architecture
 
@@ -22,46 +8,95 @@ This repository currently uses deterministic explanation templates. It does not 
 Jenkins log
     |
     v
-Regex feature extraction and category detection
+FastAPI/Pydantic validation
     |
-    +--> Deterministic explanation templates
+    v
+Regex-based feature extraction
     |
-    +--> Sentence Transformer query embedding
-              |
-              v
-        FAISS documentation search
-              |
-              v
-        Documentation references and guidance
+    +--> Error category, matched signals, line numbers
+    |
+    v
+Category-specific documentation query
+    |
+    v
+Sentence Transformer embedding
+    |
+    v
+FAISS nearest-neighbor search
+    |
+    v
+Deterministic explanation
+    |
+    v
+Summary, likely causes, and references
 ```
 
-## Tech stack
+## Built capabilities
 
-Python, FastAPI, Uvicorn, Pydantic, Sentence Transformers, HuggingFace, PyTorch, FAISS, NumPy, LangChain, Docker, Hugging Face Spaces, pytest.
+- Accepts Jenkins error logs through FastAPI REST endpoints.
+- Accepts Jenkins error-log files through a command-line interface.
+- Validates API input with Pydantic.
+- Detects these categories:
+  - Groovy syntax errors
+  - Missing agents
+  - Unavailable Jenkins nodes
+  - Missing plugins or DSL steps
+  - Missing credentials
+  - Missing workspace files
+  - Git authentication failures
+  - Timeout errors
+  - Out-of-memory errors
+  - Permission errors
+  - Docker errors
+  - Unknown errors
+- Extracts matched regex signals and Jenkins source line numbers.
+- Generates category-specific summaries and likely causes.
+- Retrieves relevant Jenkins documentation with Sentence Transformers and FAISS.
+- Stores 610 documentation vectors with 384-dimensional embeddings.
+- Provides a LangChain retrieval path using HuggingFace embeddings and an in-memory FAISS store.
+- Rebuilds the persistent documentation index from raw Jenkins documentation.
+- Supports Docker and Hugging Face Spaces deployment.
+- Caches the embedding model after first use.
+- Includes benchmark measurements for startup, latency, throughput, and index size.
+- Includes focused pytest regression tests and FAISS index consistency checks.
 
-## Repository layout
+The current explanation output is deterministic and documentation-grounded. The project does not execute Jenkins jobs, connect to a Jenkins controller, modify Jenkinsfiles, or generate responses with a live LLM.
+
+## Technology stack
+
+**Backend:** Python, FastAPI, Uvicorn, Pydantic
+
+**Search and embeddings:** Sentence Transformers, HuggingFace, FAISS, NumPy, PyTorch
+
+**Retrieval framework:** LangChain
+
+**Deployment:** Docker, Hugging Face Spaces
+
+**Testing:** pytest, Python compilation checks, API smoke tests, CLI smoke tests
+
+## Project structure
 
 ```text
 app.py                    Hugging Face/Docker entry point
-main.py                   FastAPI application and request models
+main.py                   FastAPI application and request model
 cli.py                    Command-line log explainer
-extract_error_features.py Regex classification and line extraction
-error_taxonomy.py         Supported error patterns
+error_taxonomy.py         Error categories and regex patterns
+extract_error_features.py Classification, signals, and line numbers
 explain_error.py          Deterministic explanation generation
 retrieve_docs.py          Persistent FAISS retrieval
-langchain_rag.py          In-memory LangChain retrieval pipeline
-ingest_docs.py            Raw-document ingestion and FAISS index generation
-benchmark.py              Reproducible performance measurements
-tests/test_core.py        Focused regression tests
+langchain_rag.py          LangChain retrieval pipeline
+ingest_docs.py            Raw-document ingestion and index generation
+benchmark.py              Performance benchmark
+tests/test_core.py        Regression tests
 data/docs/raw/            Jenkins documentation source files
-data/docs/docs.index      Bundled FAISS index
-data/docs/docs_meta.json  Index metadata
-data/errors/              Sample Jenkins logs
-Dockerfile                Container deployment configuration
+data/docs/docs.index      Persisted FAISS index
+data/docs/docs_meta.json  Vector metadata
+data/errors/              Sample Jenkins error logs
+Dockerfile                Container configuration
 requirements.txt          Python dependencies
 ```
 
-## Local setup
+## Setup
 
 ```bash
 python -m venv .venv
@@ -75,7 +110,7 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-The Sentence Transformer model downloads on first use and is cached in `model_cache/`.
+The `paraphrase-MiniLM-L3-v2` embedding model downloads on first use and is cached in `model_cache/`.
 
 ## Run the API
 
@@ -83,13 +118,17 @@ The Sentence Transformer model downloads on first use and is cached in `model_ca
 uvicorn main:app --reload
 ```
 
-The API is available at `http://localhost:8000`. Interactive OpenAPI documentation is available at `/docs`.
+The API runs at `http://localhost:8000`. Interactive OpenAPI documentation is available at `http://localhost:8000/docs`.
 
 ### Endpoints
 
-`GET /` returns service name, status, and available endpoints.
+#### `GET /`
 
-`POST /explain` accepts:
+Returns the service name, status, and available endpoints.
+
+#### `POST /explain`
+
+Request:
 
 ```json
 {
@@ -97,7 +136,26 @@ The API is available at `http://localhost:8000`. Interactive OpenAPI documentati
 }
 ```
 
-`POST /explain-rag` accepts the same payload and returns retrieved documentation context through the LangChain path.
+Response fields:
+
+```json
+{
+  "error_category": "missing_plugin",
+  "summary": "...",
+  "likely_causes": ["...", "..."],
+  "references": ["..."]
+}
+```
+
+#### `POST /explain-rag`
+
+Accepts the same request body and returns:
+
+- Detected error category
+- Documentation-grounded explanation
+- Retrieved documentation snippets
+- Retrieval implementation
+- Embedding model name
 
 Example:
 
@@ -113,19 +171,25 @@ curl -X POST http://localhost:8000/explain \
 python cli.py data/errors/error_01.txt
 ```
 
-The CLI prints the category, summary, likely causes, and documentation references. Missing files and unsupported categories are reported explicitly.
+The CLI prints the detected category, summary, likely causes, and documentation references. Missing files and unsupported categories are reported explicitly.
 
-## Rebuild the FAISS index
+## Build the documentation index
 
 ```bash
 python ingest_docs.py
 ```
 
-The ingestion process reads `data/docs/raw/`, creates 400-character chunks, embeds them with `paraphrase-MiniLM-L3-v2`, and writes `data/docs/docs.index` plus `data/docs/docs_meta.json`.
+The ingestion pipeline:
 
-## Performance measurement
+1. Reads files from `data/docs/raw/`.
+2. Splits documentation into 400-character chunks.
+3. Generates `paraphrase-MiniLM-L3-v2` embeddings.
+4. Stores vectors in `data/docs/docs.index`.
+5. Stores source metadata in `data/docs/docs_meta.json`.
 
-Run the reproducible local benchmark:
+The bundled index contains 610 vectors and 610 matching metadata records. Each vector has 384 dimensions.
+
+## Performance benchmark
 
 ```bash
 python benchmark.py --iterations 5
@@ -134,34 +198,50 @@ python benchmark.py --iterations 5 --json
 
 The benchmark reports:
 
-- cold model warmup time
-- classification latency
-- warmed semantic retrieval latency
-- end-to-end explanation latency
-- p50 and p95 latency
-- minimum, mean, and maximum latency
-- explanation throughput in operations per second
-- FAISS vector count and embedding dimensions
+- Model warmup time
+- Classification latency
+- Semantic retrieval latency
+- End-to-end explanation latency
+- Minimum, mean, p50, p95, and maximum latency
+- Explanation throughput
+- FAISS vector count and dimensions
 
-Model warmup is reported separately because the first run includes model loading. Compare warmed p50/p95 values across code changes, Python versions, and hardware. For production capacity planning, repeat the benchmark on the deployment hardware and include concurrent HTTP-load testing; the included benchmark is single-process and single-threaded.
+Verified local baseline:
 
-## Testing and verification
+```text
+Sample logs:                     8
+Model warmup:                    6888.347 ms
+Classification mean:             1.49 ms
+Retrieval mean:                  47.174 ms
+End-to-end explanation mean:     247.571 ms
+Measured throughput:             32.314 explanations/second
+FAISS vectors:                   610
+Embedding dimensions:            384
+```
 
-Run the focused automated tests:
+These values are single-process local measurements from the bundled benchmark.
+
+## Testing
 
 ```bash
 python -m pytest -q
-```
-
-The tests cover category detection, line-number extraction, new error categories, invalid input handling, explanation output, FAISS retrieval metadata safety, API validation, and index/metadata consistency.
-
-Additional checks:
-
-```bash
 python -m compileall -q .
 python cli.py data/errors/error_01.txt
-python benchmark.py --iterations 1 --json
+python demo_langchain_rag.py
 ```
+
+The automated tests cover:
+
+- Error category detection
+- Signal and line-number extraction
+- Timeout, memory, permission, and Docker categories
+- Empty-input handling
+- Explanation output
+- Retrieval metadata safety
+- FastAPI request validation
+- FAISS vector and metadata consistency
+
+Verified result: **7 pytest tests passed**.
 
 ## Docker
 
@@ -170,43 +250,8 @@ docker build -t jenkins-error-explainer .
 docker run --rm -p 7860:7860 jenkins-error-explainer
 ```
 
-The container serves `main:app` on port `7860`.
+The container serves `main:app` through Uvicorn on port `7860`.
 
-## Deployment
+## Resume description
 
-The repository includes a Dockerfile and `app.py` entry point compatible with Hugging Face Spaces using the Docker SDK. Configure the Space to expose port `7860`, or run the same container on another platform.
-
-## Resume-ready project description
-
-### Full version
-
-**Jenkins Error Explainer — AI-Assisted Jenkins Pipeline Troubleshooting System**
-
-- Built a Python and FastAPI service that analyzes raw Jenkins pipeline logs and returns categorized, human-readable troubleshooting explanations.
-- Implemented regex-based error feature extraction for Groovy syntax, missing agents, unavailable nodes, missing plugins, missing credentials, missing files, Git authentication, timeout, memory, permission, Docker, and unknown failures.
-- Developed a deterministic explanation engine that maps error categories to summaries, likely causes, and documentation references.
-- Built semantic Jenkins documentation retrieval using Sentence Transformers, 384-dimensional embeddings, and FAISS vector similarity search.
-- Ingested raw Jenkins documentation into a persistent index containing 610 document vectors and metadata records.
-- Added a LangChain retrieval pipeline with HuggingFace embeddings, FAISS vector stores, top-five retrieval, and documentation-grounded recommendations.
-- Exposed validated REST APIs through FastAPI and added a CLI for processing Jenkins error-log files.
-- Added reproducible performance benchmarking for model warmup, classification latency, retrieval latency, end-to-end latency, p50/p95 latency, throughput, and index scale.
-- Added Docker and Hugging Face Spaces deployment support, model caching, sample error datasets, focused pytest regression tests, and index integrity checks.
-
-### Short version
-
-Built a FastAPI and CLI-based Jenkins troubleshooting system that classifies pipeline failures, extracts error signals, retrieves relevant Jenkins documentation using Sentence Transformers and FAISS, and produces deterministic explanations. Added LangChain retrieval, Docker deployment, Hugging Face Spaces support, persistent vector indexing, performance benchmarking, and automated regression tests.
-
-### ATS skills
-
-**Languages:** Python, regular expressions, JSON
-**Backend:** FastAPI, Uvicorn, Pydantic, REST APIs
-**AI/ML:** Sentence Transformers, HuggingFace, PyTorch, embeddings, retrieval-augmented generation
-**Search:** FAISS, vector similarity search, metadata indexing
-**Frameworks:** LangChain, LangChain Community, LangChain HuggingFace
-**DevOps:** Docker, Hugging Face Spaces, model caching, CI/CD fundamentals
-**Jenkins:** Jenkins pipelines, Jenkinsfiles, Groovy, agents, nodes, plugins, credentials, workspaces, Git checkout
-**Testing:** pytest, smoke testing, API validation, benchmark testing, index integrity testing
-
-## Current scope
-
-The project is intentionally focused on Jenkins error classification and documentation retrieval. It does not execute Jenkins jobs, connect to a live Jenkins controller, modify repositories, or provide a generative LLM response. Those capabilities would be separate future extensions.
+Built a Python and FastAPI Jenkins troubleshooting service that classifies pipeline failures with deterministic regex patterns, extracts error signals and line numbers, retrieves Jenkins documentation using Sentence Transformers and FAISS, and returns summaries, likely causes, and references. Added a CLI, LangChain retrieval pipeline, persistent vector indexing, Pydantic validation, Docker and Hugging Face Spaces support, regression tests, and reproducible performance benchmarking.
