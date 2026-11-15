@@ -2,6 +2,8 @@
 
 Jenkins Error Explainer is a Python service and CLI that classifies Jenkins pipeline errors, retrieves related Jenkins documentation, and returns deterministic troubleshooting guidance.
 
+For chapter-based interview preparation, see [`INTERVIEW_PREP.md`](INTERVIEW_PREP.md).
+
 ## Architecture
 
 ```text
